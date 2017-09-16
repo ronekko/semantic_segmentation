@@ -176,7 +176,7 @@ if __name__ == '__main__':
             print('[Train] loss:', train_losses[-1])
             print('[Train]  acc:', train_accs[-1])
             print('[Valid] loss:', val_losses[-1])
-            print('[Valid]  acc:', train_accs[-1])
+            print('[Valid]  acc:', val_accs[-1])
             print('[Test]  loss:', test_losses[-1])
             print('[Test]   acc:', test_accs[-1])
             print(p)
