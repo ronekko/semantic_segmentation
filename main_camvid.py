@@ -148,6 +148,12 @@ if __name__ == '__main__':
             test_losses.append(loss)
             test_accs.append(acc)
 
+        time_end = time.time()
+        epoch_time = time_end - time_begin
+        total_time = time_end - time_origin
+        print("# {}, time: {} ({})".format(epoch, epoch_time, total_time))
+
+        if epoch % p.eval_interval == p.eval_interval - 1:
             # Plots
             plt.plot(epochs, train_losses, label='train_loss')
             plt.plot(epochs, val_losses, label='val_loss')
@@ -161,12 +167,19 @@ if __name__ == '__main__':
             plt.plot(epochs, val_accs, label='val_acc')
             plt.plot(epochs, test_accs, label='test_acc')
             plt.title('Accuracy')
+            plt.ylim(0.6, 1.0)
             plt.grid()
             plt.legend()
             plt.show()
 
-        time_end = time.time()
-        epoch_time = time_end - time_begin
-        total_time = time_end - time_origin
-        print("#", epoch)
-        print("time: {} ({})".format(epoch_time, total_time))
+            # Print
+            print('[Train] loss:', train_losses[-1])
+            print('[Train]  acc:', train_accs[-1])
+            print('[Valid] loss:', val_losses[-1])
+            print('[Valid]  acc:', train_accs[-1])
+            print('[Test]  loss:', test_losses[-1])
+            print('[Test]   acc:', test_accs[-1])
+            print(p)
+            print()
+
+            # TODO: Use chainercv.evaluations.eval_semantic_segmentation
