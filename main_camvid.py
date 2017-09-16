@@ -25,7 +25,10 @@ from full_resolution_resnet import FullResolutionResNet
 
 
 def as_tuple_dataset(dataset_class, device=-1, **kwargs):
-    return TupleDataset(*concat_examples(dataset_class(**kwargs), device))
+    arrays = concat_examples(dataset_class(**kwargs), device)
+    xp = cuda.get_array_module(*arrays)
+    arrays = [xp.ascontiguousarray(a) for a in arrays]
+    return TupleDataset(*arrays)
 
 
 def random_flip_transform(in_data):
@@ -40,17 +43,6 @@ def no_transform(in_data):
     return in_data
 
 
-def efficient_concat_exmaples(batch, device=None, padding=None):
-    '''
-    If the batch is already on a device, call `concat_example` without `device`
-    parameter.
-    '''
-    if device == int(cuda.get_device(*batch[0])):
-        return concat_examples(batch)
-    else:
-        return concat_examples(batch, device)
-
-
 @contextlib.contextmanager
 def inference_mode():
     with chainer.no_backprop_mode():
@@ -60,12 +52,14 @@ def inference_mode():
 
 def evaluate(net, dataset, batch_size, class_weight):
     xp = net.xp
+    device = int(cuda.get_device_from_array(
+        next(next(net.children()).params()).data))
     losses = []
     accs = []
     with inference_mode():
         for batch in tqdm(SerialIterator(dataset, batch_size, False, False),
                           total=len(dataset)/batch_size):
-            x, t = efficient_concat_exmaples(batch)
+            x, t = concat_examples(batch, device)
             y = net(x)
             losses.append(F.softmax_cross_entropy(
                 y, t, class_weight=class_weight, ignore_label=-1).data)
@@ -96,7 +90,6 @@ if __name__ == '__main__':
     p = SimpleNamespace()
     p.num_classes = 11
     p.device = 0
-    p.dataset_on_device = 0
     p.shuffle = True
     p.num_epochs = 350
     p.batch_size = 6
@@ -106,14 +99,10 @@ if __name__ == '__main__':
 
     ds_train = CamVidDataset(split='train')
     class_weight = calc_weight(ds_train, p.num_classes)
-    ds_train = TransformDataset(
-        as_tuple_dataset(CamVidDataset, p.dataset_on_device, split='train'),
-        no_transform)
-#        random_flip_transform)
-    ds_val = as_tuple_dataset(
-        CamVidDataset, p.dataset_on_device, split='val')
-    ds_test = as_tuple_dataset(
-        CamVidDataset, p.dataset_on_device, split='test')
+    ds_train = TransformDataset(as_tuple_dataset(CamVidDataset, split='train'),
+                                no_transform)
+    ds_val = as_tuple_dataset(CamVidDataset, split='val')
+    ds_test = as_tuple_dataset(CamVidDataset, split='test')
 
     xp = np if p.device < 0 else cuda.cupy
     class_weight = xp.asarray(class_weight, np.float32)
@@ -135,7 +124,7 @@ if __name__ == '__main__':
         time_begin = time.time()
         it_train = SerialIterator(ds_train, p.batch_size, False, p.shuffle)
         for batch in tqdm(it_train):
-            x, t = efficient_concat_exmaples(batch, p.device)
+            x, t = concat_examples(batch, p.device)
 
             y = net(x)
             loss = F.softmax_cross_entropy(y, t, class_weight=class_weight,

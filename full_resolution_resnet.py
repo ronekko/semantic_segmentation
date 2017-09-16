@@ -8,7 +8,6 @@ Created on Thu Sep 14 15:22:42 2017
 https://arxiv.org/abs/1611.08323
 """
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import chainer
