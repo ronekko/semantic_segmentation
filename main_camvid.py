@@ -21,7 +21,9 @@ from chainer.datasets import TransformDataset, TupleDataset
 from chainercv.links import SegNetBasic
 from chainercv.datasets import CamVidDataset
 
+from dilated_convnet import DilatedConvNet
 from full_resolution_resnet import FullResolutionResNet
+from segnet import SegNet
 
 
 def as_tuple_dataset(dataset_class, device=-1, **kwargs):
@@ -92,9 +94,9 @@ if __name__ == '__main__':
     p.device = 0
     p.shuffle = True
     p.num_epochs = 350
-    p.batch_size = 6
+    p.batch_size = 12
     p.learning_rate = 1e-1
-    p.weight_decay = 1e-5
+    p.weight_decay = 1e-50
     p.eval_interval = 5
 
     ds_train = CamVidDataset(split='train')
@@ -106,8 +108,9 @@ if __name__ == '__main__':
 
     xp = np if p.device < 0 else cuda.cupy
     class_weight = xp.asarray(class_weight, np.float32)
-#    net = SegNetBasic(p.num_classes).to_gpu()
-    net = FullResolutionResNet(p.num_classes).to_gpu()
+#    net = SegNet(p.num_classes).to_gpu()
+#    net = FullResolutionResNet(p.num_classes).to_gpu()
+    net = DilatedConvNet(p.num_classes).to_gpu()
     optimizer = optimizers.MomentumSGD(p.learning_rate)
     optimizer.setup(net)
     optimizer.add_hook(chainer.optimizer.WeightDecay(rate=p.weight_decay))
