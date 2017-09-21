@@ -12,7 +12,7 @@ import chainer.links as L
 
 class ENetPreActivation(chainer.Chain):
     def __init__(self, n_class):
-        ch_init, ch1, ch2, ch3, ch4, ch5 = 16, 64, 256, 256, 128, 32
+        ch_init, ch1, ch2, ch3, ch4, ch5 = 16, 128, 256, 256, 128, 32
         super(ENetPreActivation, self).__init__(
             initial=InitialBlock(ch_init),
             stage1=Stage1(ch_init, ch1),
