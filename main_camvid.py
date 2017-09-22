@@ -79,6 +79,7 @@ def evaluate(net, dataset, batch_size, class_weight):
             del y
 
     loss_avg = cuda.to_cpu(xp.stack(losses).mean())
+    loss_avg = np.asscalar(loss_avg)
     confusion = cuda.to_cpu(confusion)
     iou = calc_semantic_segmentation_iou(confusion)
     pixel_accuracy = np.diag(confusion).sum() / confusion.sum()
@@ -140,11 +141,18 @@ if __name__ == '__main__':
 
     epochs = []
     train_losses = []
-    train_accs = []
     val_losses = []
-    val_accs = []
     test_losses = []
-    test_accs = []
+    train_paccs = []  # pacc = pixel accurecy
+    val_paccs = []
+    test_paccs = []
+    train_mcaccs = []  # mcacc = mean class accuracy
+    val_mcaccs = []
+    test_mcaccs = []
+    train_mious = []  # miou = mean intersection-over-union
+    val_mious = []
+    test_mious = []
+
     time_origin = time.time()
     for epoch in range(p.num_epochs):
         time_begin = time.time()
@@ -166,44 +174,77 @@ if __name__ == '__main__':
             epochs.append(epoch)
             loss, scores = evaluate(net, ds_train, p.batch_size, class_weight)
             train_losses.append(loss)
-            train_accs.append(scores['pixel_accuracy'])
+            train_paccs.append(scores['pixel_accuracy'])
+            train_mcaccs.append(scores['mean_class_accuracy'])
+            train_mious.append(scores['miou'])
             loss, scores = evaluate(net, ds_val, p.batch_size, class_weight)
             val_losses.append(loss)
-            val_accs.append(scores['pixel_accuracy'])
+            val_paccs.append(scores['pixel_accuracy'])
+            val_mcaccs.append(scores['mean_class_accuracy'])
+            val_mious.append(scores['miou'])
             loss, scores = evaluate(net, ds_test, p.batch_size, class_weight)
             test_losses.append(loss)
-            test_accs.append(scores['pixel_accuracy'])
+            test_paccs.append(scores['pixel_accuracy'])
+            test_mcaccs.append(scores['mean_class_accuracy'])
+            test_mious.append(scores['miou'])
 
         time_end = time.time()
         epoch_time = time_end - time_begin
         total_time = time_end - time_origin
-        print("# {}, time: {} ({})".format(epoch, epoch_time, total_time))
+        print('# {}, time: {:0.2f} (total {:0.1f}) [s]'.format(
+            epoch, epoch_time, total_time))
 
         if epoch % p.eval_interval == p.eval_interval - 1:
             # Plots
+            plt.subplot(1, 2, 1)
             plt.plot(epochs, train_losses, label='train_loss')
             plt.plot(epochs, val_losses, label='val_loss')
             plt.plot(epochs, test_losses, label='test_loss')
             plt.title('Loss')
             plt.grid()
             plt.legend()
-            plt.show()
 
-            plt.plot(epochs, train_accs, label='train_acc')
-            plt.plot(epochs, val_accs, label='val_acc')
-            plt.plot(epochs, test_accs, label='test_acc')
-            plt.title('Accuracy')
+            plt.subplot(1, 2, 2)
+            plt.plot(epochs, train_paccs, label='train_pacc')
+            plt.plot(epochs, val_paccs, label='val_pacc')
+            plt.plot(epochs, test_paccs, label='test_pacc')
+            plt.title('Pixel accuracy')
             plt.ylim(0.6, 1.0)
             plt.grid()
             plt.legend()
+            plt.tight_layout()
+            plt.show()
+
+            plt.subplot(1, 2, 1)
+            plt.plot(epochs, train_mious, label='train_miou')
+            plt.plot(epochs, val_mious, label='val_miou')
+            plt.plot(epochs, test_mious, label='test_miou')
+            plt.title('Average of class-wise IoUs')
+            plt.ylim(0.4, 1.0)
+            plt.grid()
+            plt.legend()
+
+            plt.subplot(1, 2, 2)
+            plt.plot(epochs, train_mcaccs, label='train_mcacc')
+            plt.plot(epochs, val_mcaccs, label='val_mcacc')
+            plt.plot(epochs, test_mcaccs, label='test_mcacc')
+            plt.title('Average of class-wise pixel accuracies')
+            plt.ylim(0.6, 1.0)
+            plt.grid()
+            plt.legend()
+            plt.tight_layout()
             plt.show()
 
             # Print
-            print('[Train] loss:', train_losses[-1])
-            print('[Train]  acc:', train_accs[-1])
-            print('[Valid] loss:', val_losses[-1])
-            print('[Valid]  acc:', val_accs[-1])
-            print('[Test]  loss:', test_losses[-1])
-            print('[Test]   acc:', test_accs[-1])
+            print('\t\tLoss\tPAcc\tmIoU\tmCPAcc')
+            print('[train]\t\t{:1.3}\t{:1.3}\t{:1.3}\t{:1.3}'.format(
+                train_losses[-1], train_paccs[-1],
+                train_mious[-1], train_mcaccs[-1]))
+            print('[valid]\t\t{:1.3}\t{:1.3}\t{:1.3}\t{:1.3}'.format(
+                val_losses[-1], val_paccs[-1],
+                val_mious[-1], val_mcaccs[-1]))
+            print('[test]\t\t{:1.3}\t{:1.3}\t{:1.3}\t{:1.3}'.format(
+                test_losses[-1], test_paccs[-1],
+                test_mious[-1], test_mcaccs[-1]))
             print(p)
             print()
