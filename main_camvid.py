@@ -20,6 +20,8 @@ from chainer.dataset import concat_examples
 from chainer.datasets import TransformDataset, TupleDataset
 from chainercv.links import SegNetBasic
 from chainercv.datasets import CamVidDataset
+from chainercv.evaluations import (
+    eval_semantic_segmentation, calc_semantic_segmentation_iou)
 
 from dilated_convnet import DilatedConvNet
 from full_resolution_resnet import FullResolutionResNet
@@ -58,8 +60,10 @@ def evaluate(net, dataset, batch_size, class_weight):
     xp = net.xp
     device = int(cuda.get_device_from_array(
         next(next(net.children()).params()).data))
+
+    n_class = len(class_weight)
     losses = []
-    accs = []
+    confusion = xp.zeros((n_class, n_class), np.int64)
     with inference_mode():
         for batch in tqdm(SerialIterator(dataset, batch_size, False, False),
                           total=len(dataset)/batch_size):
@@ -67,10 +71,23 @@ def evaluate(net, dataset, batch_size, class_weight):
             y = net(x)
             losses.append(F.softmax_cross_entropy(
                 y, t, class_weight=class_weight, ignore_label=-1).data)
-            accs.append(F.accuracy(y, t, ignore_label=-1).data)
+            y = y.data.argmax(1)
+            mask = t >= 0  # ground truth label -1 is ignored
+            confusion += xp.bincount(
+                n_class * t[mask] + y[mask],
+                minlength=n_class**2).reshape((n_class, n_class))
+            del y
+
     loss_avg = cuda.to_cpu(xp.stack(losses).mean())
-    acc_avg = cuda.to_cpu(xp.stack(accs).mean())
-    return loss_avg, acc_avg
+    confusion = cuda.to_cpu(confusion)
+    iou = calc_semantic_segmentation_iou(confusion)
+    pixel_accuracy = np.diag(confusion).sum() / confusion.sum()
+    class_accuracy = np.diag(confusion) / np.sum(confusion, axis=1)
+    scores = {'iou': iou, 'miou': np.nanmean(iou),
+              'pixel_accuracy': pixel_accuracy,
+              'class_accuracy': class_accuracy,
+              'mean_class_accuracy': np.nanmean(class_accuracy)}
+    return loss_avg, scores
 
 
 def calc_weight(dataset_train, num_classes):
@@ -147,15 +164,15 @@ if __name__ == '__main__':
 
         if epoch % p.eval_interval == p.eval_interval - 1:
             epochs.append(epoch)
-            loss, acc = evaluate(net, ds_train, p.batch_size, class_weight)
+            loss, scores = evaluate(net, ds_train, p.batch_size, class_weight)
             train_losses.append(loss)
-            train_accs.append(acc)
-            loss, acc = evaluate(net, ds_val, p.batch_size, class_weight)
+            train_accs.append(scores['pixel_accuracy'])
+            loss, scores = evaluate(net, ds_val, p.batch_size, class_weight)
             val_losses.append(loss)
-            val_accs.append(acc)
-            loss, acc = evaluate(net, ds_test, p.batch_size, class_weight)
+            val_accs.append(scores['pixel_accuracy'])
+            loss, scores = evaluate(net, ds_test, p.batch_size, class_weight)
             test_losses.append(loss)
-            test_accs.append(acc)
+            test_accs.append(scores['pixel_accuracy'])
 
         time_end = time.time()
         epoch_time = time_end - time_begin
@@ -190,5 +207,3 @@ if __name__ == '__main__':
             print('[Test]   acc:', test_accs[-1])
             print(p)
             print()
-
-            # TODO: Use chainercv.evaluations.eval_semantic_segmentation
