@@ -108,6 +108,18 @@ def calc_weight(dataset_train, num_classes):
     return class_weight
 
 
+def matshow_segmentation(y, t, n_class=11):
+    plt.subplot(1, 2, 1)
+    plt.matshow(y, vmin=-1, vmax=n_class - 1, fignum=0, cmap=plt.cm.gist_ncar)
+    plt.title('prediction')
+    plt.axis('off')
+    plt.subplot(1, 2, 2)
+    plt.matshow(t, vmin=-1, vmax=n_class - 1, fignum=0, cmap=plt.cm.gist_ncar)
+    plt.title('ground truth')
+    plt.axis('off')
+    plt.show()
+
+
 if __name__ == '__main__':
     p = SimpleNamespace()
     p.num_classes = 11
