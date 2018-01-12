@@ -5,6 +5,7 @@ Created on Mon Sep 18 16:05:34 2017
 @author: sakurai
 
 "Multi-Scale Context Aggregation by Dilated Convolutions"
+https://arxiv.org/abs/1511.07122v3
 """
 
 import chainer

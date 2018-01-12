@@ -4,6 +4,7 @@ Created on Wed Sep 13 15:51:02 2017
 
 @author: sakurai
 """
+
 from types import SimpleNamespace
 
 import chainer
@@ -26,12 +27,6 @@ if __name__ == '__main__':
     hp.weight_decay = 5e-4
     hp.lr_decrease_rate = 1.0
     hp.epochs_decrease_lr = []
-
-#    net = SegNet(p.num_classes).to_gpu()
-#    net = FullResolutionResNet(p.num_classes).to_gpu()
-#    net = DilatedConvNet(p.num_classes).to_gpu()
-#    net = ENet(p.num_classes).to_gpu()
-#    net = ENetPreActivation(p.num_classes).to_gpu()
 
     model = FullResolutionResNet(hp.num_classes)
     result = common.train_eval(model, hp)

@@ -3,6 +3,10 @@
 Created on Tue Sep 19 15:13:49 2017
 
 @author: sakurai
+
+A variant with pre-activation units of
+"ENet: A Deep Neural Network Architecture for Real-Time Semantic Segmentation",
+https://arxiv.org/abs/1606.02147
 """
 
 import chainer

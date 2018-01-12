@@ -3,6 +3,9 @@
 Created on Mon Sep 18 22:31:07 2017
 
 @author: sakurai
+
+"ENet: A Deep Neural Network Architecture for Real-Time Semantic Segmentation",
+https://arxiv.org/abs/1606.02147
 """
 
 import chainer
