@@ -108,22 +108,26 @@ def train_eval(net, hparams, save_dir='results'):
                 net.cleargrads()
                 loss.backward()
                 optimizer.update()
+                pred = y.array.argmax(1)
                 del loss
                 del y
                 net.cleargrads()
 
             if epoch % p.eval_interval == p.eval_interval - 1:
                 epochs.append(epoch)
+
                 loss, scores = evaluate(net, ds_train, p.batch_size, class_weight)
                 train_losses.append(loss)
                 train_paccs.append(scores['pixel_accuracy'])
                 train_mcaccs.append(scores['mean_class_accuracy'])
                 train_mious.append(scores['miou'])
+
                 loss, scores = evaluate(net, ds_val, p.batch_size, class_weight)
                 val_losses.append(loss)
                 val_paccs.append(scores['pixel_accuracy'])
                 val_mcaccs.append(scores['mean_class_accuracy'])
                 val_mious.append(scores['miou'])
+
                 loss, scores = evaluate(net, ds_test, p.batch_size, class_weight)
                 test_losses.append(loss)
                 test_paccs.append(scores['pixel_accuracy'])
@@ -189,6 +193,10 @@ def train_eval(net, hparams, save_dir='results'):
                 plt.legend()
                 plt.tight_layout()
                 plt.show()
+
+                matshow_segmentation(cuda.to_cpu(x[0]),
+                                     cuda.to_cpu(pred[0]),
+                                     cuda.to_cpu(t[0]))
 
                 # Print
                 print('\t\tLoss\tPAcc\tmIoU\tmCPAcc')
@@ -265,13 +273,19 @@ def evaluate(net, dataset, batch_size, class_weight):
     return loss_avg, scores
 
 
-def matshow_segmentation(y, t, n_class=11):
-    plt.subplot(1, 2, 1)
+def matshow_segmentation(x, y, t, n_class=11):
+    plt.figure(figsize=(8, 4))
+    plt.subplot(1, 3, 1)
+    plt.imshow(x.transpose(1, 2, 0).astype(np.uint8))
+    plt.title('input image')
+    plt.axis('off')
+    plt.subplot(1, 3, 2)
     plt.matshow(y, vmin=-1, vmax=n_class - 1, fignum=0, cmap=plt.cm.gist_ncar)
     plt.title('prediction')
     plt.axis('off')
-    plt.subplot(1, 2, 2)
+    plt.subplot(1, 3, 3)
     plt.matshow(t, vmin=-1, vmax=n_class - 1, fignum=0, cmap=plt.cm.gist_ncar)
     plt.title('ground truth')
     plt.axis('off')
+    plt.tight_layout()
     plt.show()
