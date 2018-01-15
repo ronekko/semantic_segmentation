@@ -15,18 +15,23 @@ from full_resolution_resnet import FullResolutionResNet
 
 if __name__ == '__main__':
     hp = SimpleNamespace()
+
+    # Parameters for network
     hp.num_classes = 11
-    hp.device = 0
-    hp.shuffle = True
+
+    # Parameters for optimization
     hp.num_epochs = 350
     hp.batch_size = 6
     hp.lr_init = 1e-3
-    hp.weight_decay = 1e-5
-    hp.eval_interval = 5
     hp.optimizer = chainer.optimizers.Adam
     hp.weight_decay = 5e-4
     hp.lr_decrease_rate = 1.0
     hp.epochs_decrease_lr = []
+    hp.shuffle = True
+
+    # Parameters for experiment
+    hp.device = 0
+    hp.eval_interval = 5
 
     model = FullResolutionResNet(hp.num_classes)
     result = common.train_eval(model, hp)
