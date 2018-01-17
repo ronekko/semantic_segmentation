@@ -116,19 +116,22 @@ def train_eval(net, hparams, save_dir='results'):
             if epoch % p.eval_interval == p.eval_interval - 1:
                 epochs.append(epoch)
 
-                loss, scores = evaluate(net, ds_train, p.batch_size, class_weight)
+                loss, scores = evaluate(
+                    net, ds_train, p.batch_size, class_weight)
                 train_losses.append(loss)
                 train_paccs.append(scores['pixel_accuracy'])
                 train_mcaccs.append(scores['mean_class_accuracy'])
                 train_mious.append(scores['miou'])
 
-                loss, scores = evaluate(net, ds_val, p.batch_size, class_weight)
+                loss, scores = evaluate(
+                    net, ds_val, p.batch_size, class_weight)
                 val_losses.append(loss)
                 val_paccs.append(scores['pixel_accuracy'])
                 val_mcaccs.append(scores['mean_class_accuracy'])
                 val_mious.append(scores['miou'])
 
-                loss, scores = evaluate(net, ds_test, p.batch_size, class_weight)
+                loss, scores = evaluate(
+                    net, ds_test, p.batch_size, class_weight)
                 test_losses.append(loss)
                 test_paccs.append(scores['pixel_accuracy'])
                 test_mcaccs.append(scores['mean_class_accuracy'])
@@ -145,7 +148,6 @@ def train_eval(net, hparams, save_dir='results'):
                                 val_mcaccs[-1], val_mious[-1])
                     best_test = (test_losses[-1], test_paccs[-1],
                                  test_mcaccs[-1], test_mious[-1])
-
 
             time_end = time.time()
             epoch_time = time_end - time_begin
